@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Converter - JPEG/PNG to WebP/AVIF</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .converter-box {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .upload-area:hover {
+            background-color: #f9f9f9;
+        }
+        .hidden {
+            display: none;
+        }
+        .format-options {
+            margin: 20px 0;
+        }
+        .radio-group {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        .radio-item {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .radio-item input {
+            margin-right: 8px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .status-message {
+            margin-top: 20px;
+            text-align: center;
+            color: #555;
+        }
+        .result-section {
+            margin-top: 30px;
+        }
+        .download-all-button {
+            background-color: #2ecc71;
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+        .download-all-button:hover {
+            background-color: #27ae60;
+        }
+        .file-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f9f9f9;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .file-name {
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 60%;
+        }
+        .file-size {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .remove-file {
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 2px 6px;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .result-details {
+            flex: 2;
+        }
+        .result-name {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .size-comparison {
+            display: flex;
+            gap: 15px;
+            color: #555;
+            font-size: 14px;
+        }
+        .size-saved {
+            color: #27ae60;
+        }
+        .download-button {
+            background-color: #3498db;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-left: 15px;
+            flex: 0 0 auto;
+        }
+        .progress-container {
+            height: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #2ecc71;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .drop-message {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .file-type-info {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        .summary {
+            background-color: #eef7f2;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .summary-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        .stat-item {
+            flex: 1;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 500;
+            color: #2980b9;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="converter-box">
+        <h1>Image Converter</h1>
+        
+        <div id="uploadArea" class="upload-area">
+            <div class="drop-message">Drag & drop your JPEG or PNG images here</div>
+            <p>or <strong>click to browse</strong></p>
+            <div class="file-type-info">Supports multiple files (JPG, JPEG, PNG)</div>
+            <input type="file" id="fileInput" class="hidden" accept=".jpg,.jpeg,.png" multiple />
+        </div>
+        
+        <div id="fileList" class="file-list hidden">
+        </div>
+        <div class="format-options">
+            <h3>Convert to:</h3>
+            <div class="radio-group">
+                <label class="radio-item">
+                    <input type="radio" name="format" value="webp" checked> WebP
+                </label>
+                <label class="radio-item">
+                    <input type="radio" name="format" value="avif"> AVIF
+                </label>
+            </div>
+        </div>
+        
+        <button id="convertButton" disabled>Convert Images</button>
+        
+        <div class="status-message" id="statusMessage"></div>
+        
+        <div class="result-section hidden" id="resultSection">
+            <h3>Conversion Results</h3>
+            
+            <div class="summary" id="summary">
+                <div class="summary-title">Summary</div>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalImages">0</div>
+                        <div class="stat-label">Images Converted</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalSizeBefore">0 KB</div>
+                        <div class="stat-label">Original Size</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalSizeAfter">0 KB</div>
+                        <div class="stat-label">New Size</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalSaved">0%</div>
+                        <div class="stat-label">Space Saved</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="downloadAllButton" class="download-all-button">Download All Converted Images (ZIP)</button>
+            
+            <div id="resultList">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const convertButton = document.getElementById('convertButton');
+            const statusMessage = document.getElementById('statusMessage');
+            const resultSection = document.getElementById('resultSection');
+            const fileList = document.getElementById('fileList');
+            const resultList = document.getElementById('resultList');
+            const downloadAllButton = document.getElementById('downloadAllButton');
+            
+            const totalImages = document.getElementById('totalImages');
+            const totalSizeBefore = document.getElementById('totalSizeBefore');
+            const totalSizeAfter = document.getElementById('totalSizeAfter');
+            const totalSaved = document.getElementById('totalSaved');
+            
+            // Keep track of files and conversion results
+            let files = [];
+            let results = [];
+            
+            // Handle click on upload area
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#3498db';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#ccc';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#ccc';
+                if (e.dataTransfer.files.length) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+            
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length) {
+                    handleFiles(fileInput.files);
+                }
+            });
+            
+            function handleFiles(fileList) {
+                const validFiles = Array.from(fileList).filter(file => {
+                    return file.type === 'image/jpeg' || file.type === 'image/png';
+                });
+                
+                if (validFiles.length === 0) {
+                    statusMessage.textContent = 'Please select JPEG or PNG images.';
+                    return;
+                }
+                
+                // Add valid files to our files array
+                files = [...files, ...validFiles];
+                
+                // Update UI
+                updateFileList();
+                
+                // Clear any previous status messages
+                statusMessage.textContent = '';
+            }
+            
+            function updateFileList() {
+                // Show file list if we have files
+                if (files.length > 0) {
+                    fileList.classList.remove('hidden');
+                    convertButton.disabled = false;
+                } else {
+                    fileList.classList.add('hidden');
+                    convertButton.disabled = true;
+                }
+                
+                // Update file list UI
+                fileList.innerHTML = '';
+                files.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <div class="file-name" title="${file.name}">${file.name}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                        <div class="remove-file" data-index="${index}">×</div>
+                    `;
+                    fileList.appendChild(fileItem);
+                });
+                
+                // Add event listeners for remove buttons
+                document.querySelectorAll('.remove-file').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.getAttribute('data-index'));
+                        files.splice(index, 1);
+                        updateFileList();
+                    });
+                });
+            }
+            
+            // Handle convert button click
+            convertButton.addEventListener('click', async () => {
+                if (files.length === 0) return;
+                
+                const format = document.querySelector('input[name="format"]:checked').value;
+                
+                // Update status
+                statusMessage.textContent = 'Converting... Please wait.';
+                convertButton.disabled = true;
+                
+                // Clear previous results
+                results = [];
+                resultList.innerHTML = '';
+                
+                // Show result section
+                resultSection.classList.remove('hidden');
+                
+                // Track total sizes for summary
+                let originalTotalSize = 0;
+                let convertedTotalSize = 0;
+                
+                // Process each file
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    originalTotalSize += file.size;
+                    
+                    // Create result item placeholder
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item';
+                    resultItem.innerHTML = `
+                        <div class="result-details">
+                            <div class="result-name">${file.name}</div>
+                            <div class="size-comparison">
+                                <span>Original: ${formatFileSize(file.size)}</span>
+                                <span>Converted: Converting...</span>
+                                <span class="size-saved"></span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <button class="download-button" disabled>Download</button>
+                    `;
+                    resultList.appendChild(resultItem);
+                    
+                    // Update progress
+                    const progressBar = resultItem.querySelector('.progress-bar');
+                    progressBar.style.width = '10%';
+                    
+                    try {
+                        // Create form data
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        formData.append('format', format);
+                        
+                        // Send request to server
+                        const response = await fetch('/api/convert', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`Conversion failed for ${file.name}`);
+                        }
+                        
+                        // Update progress
+                        progressBar.style.width = '90%';
+                        
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        
+                        // Calculate size reduction
+                        const percentSaved = ((file.size - blob.size) / file.size * 100).toFixed(1);
+                        
+                        // Update size information
+                        const sizeComparison = resultItem.querySelector('.size-comparison');
+                        sizeComparison.innerHTML = `
+                            <span>Original: ${formatFileSize(file.size)}</span>
+                            <span>Converted: ${formatFileSize(blob.size)}</span>
+                            <span class="size-saved">Saved: ${percentSaved}%</span>
+                        `;
+                        
+                        // Update download button
+                        const downloadButton = resultItem.querySelector('.download-button');
+                        downloadButton.disabled = false;
+                        downloadButton.addEventListener('click', () => {
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${file.name.split('.')[0]}.${format}`;
+                            a.click();
+                        });
+                        
+                        // Complete progress bar
+                        progressBar.style.width = '100%';
+                        
+                        // Add to results array
+                        results.push({
+                            originalName: file.name,
+                            originalSize: file.size,
+                            convertedSize: blob.size,
+                            url: url,
+                            format: format
+                        });
+                        
+                        // Update total converted size
+                        convertedTotalSize += blob.size;
+                        
+                    } catch (error) {
+                        console.error(error);
+                        resultItem.querySelector('.size-comparison').textContent = `Error: ${error.message}`;
+                        progressBar.style.backgroundColor = '#e74c3c';
+                        progressBar.style.width = '100%';
+                    }
+                }
+                
+                totalImages.textContent = results.length;
+                totalSizeBefore.textContent = formatFileSize(originalTotalSize);
+                totalSizeAfter.textContent = formatFileSize(convertedTotalSize);
+                const overallSaved = ((originalTotalSize - convertedTotalSize) / originalTotalSize * 100).toFixed(1);
+                totalSaved.textContent = `${overallSaved}%`;
+                statusMessage.textContent = 'All conversions completed!';
+                convertButton.disabled = false;
+                if (results.length > 0) {
+                    downloadAllButton.disabled = false;
+                    downloadAllButton.onclick = async () => {
+                        // This requires the JSZip library which we're simulating here
+                        alert('In a real application, this would download a zip file with all converted images.');
+                        
+                        // If you want to implement this feature, you would need to:
+                        // 1. Add JSZip to your project
+                        // 2. Create a new zip file
+                        // 3. Add all the converted images to it
+                        // 4. Generate and download the zip file
+                    };
+                } else {
+                    downloadAllButton.disabled = true;
+                }
+            });
+            
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' bytes';
+                else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+                else return (bytes / 1048576).toFixed(1) + ' MB';
+            }
+        });
+    </script>
+</body>
+</html>
